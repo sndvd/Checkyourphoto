@@ -3,167 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkyourphoto - Futuristic Forensic Analysis</title>
+    <title>Checkyourphoto - Forensic Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Silkscreen&family=Big+Shoulders+Display:wght@900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Silkscreen&family=Inter:wght@900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #101314;
-            --card-bg: #141C1A;
-            --accent-color: #00FF8C;
-            --text-color: #e0e0e0;
-            --neon-text-glow: 0 0 8px rgba(0, 255, 140, 0.8);
+        :root { --bg-color: #101314; --accent-color: #00FF8C; }
+        body { background-color: var(--bg-color); color: #fff; font-family: 'Orbitron', sans-serif; }
+        
+        /* THE SCAN AREA */
+        .scan-container { border: 2px solid var(--accent-color); padding: 2rem; background: #000; margin-top: 2rem; }
+        .dropzone { border: 2px dashed var(--accent-color); padding: 50px; cursor: pointer; text-align: center; }
+        .drop-instruction { color: var(--accent-color); font-weight: 900; font-size: 1.2rem; text-transform: uppercase; }
+
+        /* THE RESULTS - HIGH CONTRAST BLACK ON WHITE */
+        #results { display: none; margin-top: 30px; background: #fff; padding: 30px; border: 5px solid var(--accent-color); }
+        
+        #fileNameDisplay {
+            color: #000;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900; /* AVENUE BLACK STYLE */
+            font-size: 2rem;
+            border-bottom: 5px solid #000;
+            margin-bottom: 20px;
+            word-wrap: break-word;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Orbitron', sans-serif;
-            background-image: linear-gradient(rgba(0, 255, 140, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 140, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
+        .result-box { margin-bottom: 20px; }
+        .result-label { color: #666; font-family: 'Silkscreen'; font-size: 0.8rem; margin-bottom: 5px; display: block; }
+        
+        .result-value {
+            color: #000;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem; /* EXTREMELY BRIGHT AND CLEAR */
+            line-height: 1.2;
         }
 
-        .brand-font { font-family: 'Big Shoulders Display', sans-serif; font-weight: 900; text-transform: uppercase; }
-        .pixel-font { font-family: 'Silkscreen', cursive; }
-        .neon-text { color: var(--accent-color); text-shadow: var(--neon-text-glow); }
-
-        .navbar { background-color: rgba(16, 19, 20, 0.9); border-bottom: 1px solid rgba(0, 255, 140, 0.2); padding: 1rem 0; }
-        .brand-icon { width: 30px; height: 30px; margin: 0 10px; filter: drop-shadow(var(--neon-text-glow)); }
-
-        .header-title { font-size: 4rem; text-align: center; margin-top: 2rem; }
-        .header-subtitle { font-size: 1.2rem; letter-spacing: 8px; text-align: center; color: var(--accent-color); margin-bottom: 1rem; opacity: 0.8; }
-
-        /* The new instruction line style */
-        .mission-brief {
-            font-family: 'Silkscreen', cursive;
-            color: #00FF8C;
-            text-align: center;
-            font-size: 0.8rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            letter-spacing: 1px;
-        }
-
-        .scan-container { border: 1px solid rgba(0, 255, 140, 0.1); background: linear-gradient(180deg, rgba(0, 255, 140, 0.02) 0%, rgba(16, 19, 20, 1) 100%); padding: 2rem; position: relative; }
-        .focus-marker { position: absolute; width: 40px; height: 40px; z-index: 10; }
-
-        .dropzone {
-            border: 2px dotted var(--accent-color);
-            background-color: var(--card-bg);
-            padding: 60px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .drop-instruction {
+        #aiBox {
+            background: #000;
             color: var(--accent-color);
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 255, 140, 0.5);
-            text-transform: uppercase;
-            font-size: 0.9rem;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
         }
 
-        .scan-line { position: absolute; top: -100%; left: 0; width: 100%; height: 4px; background: var(--accent-color); box-shadow: 0 0 15px var(--accent-color); animation: scan 3s linear infinite; display: none; }
-        .dropzone:hover .scan-line { display: block; }
-        @keyframes scan { 0% { top: -5%; } 100% { top: 105%; } }
-
-        .upload-icon { width: 120px; margin-bottom: 20px; filter: drop-shadow(var(--neon-text-glow)); }
-        .card { background-color: var(--card-bg); border: 1px solid rgba(0, 255, 140, 0.2); color: var(--text-color); }
-        #map { height: 400px; width: 100%; filter: grayscale(1) invert(0.9) hue-rotate(100deg); border: 1px solid var(--accent-color); }
-        #results { display: none; }
+        #map { height: 300px; width: 100%; border: 3px solid #000; margin-top: 15px; filter: grayscale(1); }
     </style>
 </head>
 <body>
 
-<nav class="navbar">
-    <div class="container justify-content-center">
-        <img src="assets/telescope_icon.svg" class="brand-icon">
-        <span class="navbar-brand neon-text pixel-font">META_READER_v1.0</span>
-        <img src="assets/microscope_icon.svg" class="brand-icon">
+<div class="container pb-5">
+    <div class="text-center mt-5">
+        <h1 style="font-size: 3.5rem; font-weight: 900;" class="neon-text">CHECK YOUR PHOTO</h1>
+        <p class="text-success fw-bold">FORENSIC DATA EXTRACTION</p>
     </div>
-</nav>
 
-<div class="container mt-4">
-    <h1 class="header-title neon-text brand-font">CHECK YOUR PHOTO</h1>
-    <p class="header-subtitle pixel-font">FORENSIC ANALYSIS</p>
-    
-    <!-- YOUR NEW LINE OF COPY -->
-    <p class="mission-brief">Scan your photo or image and find out information like date, location, format, etc.</p>
+    <div class="scan-container">
+        <div class="dropzone" id="uploadArea">
+            <div class="drop-instruction">DRAG IMAGE HERE TO REVEAL SECRETS</div>
+            <input type="file" id="fileInput" class="d-none">
+        </div>
+        
+        <div id="loading" class="text-center mt-3" style="display:none;">
+            <h2 class="text-success">DECRYPTING...</h2>
+        </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="scan-container mb-5">
-                <img src="assets/focus_markers.svg" class="focus-marker top-0 start-0">
-                <img src="assets/focus_markers.svg" class="focus-marker top-0 end-0" style="transform: rotate(90deg);">
-                <img src="assets/focus_markers.svg" class="focus-marker bottom-0 start-0" style="transform: rotate(270deg);">
-                <img src="assets/focus_markers.svg" class="focus-marker bottom-0 end-0" style="transform: rotate(180deg);">
-                
-                <div class="dropzone" id="uploadArea">
-                    <div class="scan-line"></div>
-                    <img src="assets/forensic_magnifier.svg" class="upload-icon">
-                    <h4 class="pixel-font neon-text">INITIATE SCAN</h4>
-                    <p class="mt-3 drop-instruction">DRAG PHOTO HERE / CLICK TO BROWSE</p>
-                    <input type="file" id="fileInput" class="d-none" accept="image/*">
-                </div>
-                
-                <div id="loading" class="text-center mt-4" style="display: none;">
-                    <div class="spinner-border text-success"></div>
-                    <p class="mt-2 neon-text pixel-font">ANALYZING BYTES...</p>
-                </div>
+        <div id="results">
+            <div id="fileNameDisplay">FILENAME.JPG</div>
+            
+            <div class="result-box">
+                <span class="result-label">DATE_OF_ORIGIN</span>
+                <div class="result-value" id="val-date">SEARCHING...</div>
+            </div>
 
-                <div id="results" class="mt-5">
-                    <h5 id="fileNameDisplay" class="neon-text pixel-font border-bottom pb-2 mb-4">FILE.DAT</h5>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card p-3">
-                                <label class="small text-muted mb-1 text-uppercase">Capture Time</label>
-                                <div class="form-control mb-2" id="val-capture-time">N/A</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card p-3">
-                                <label class="small text-muted mb-1 text-uppercase">Hardware</label>
-                                <div class="form-control mb-2" id="val-device">N/A</div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="result-box">
+                <span class="result-label">HARDWARE_SIGNATURE</span>
+                <div class="result-value" id="val-device">SEARCHING...</div>
+            </div>
 
-                    <div class="card mt-3" id="gps-container">
-                        <div id="map"></div>
-                    </div>
+            <div id="map-container" style="display:none;">
+                <span class="result-label">COORDINATE_FIX</span>
+                <div id="map"></div>
+            </div>
 
-                    <div class="card mt-4 p-3" style="border-left: 4px solid var(--accent-color);">
-                        <h6 class="pixel-font neon-text">AI_FORENSIC_SUMMARY</h6>
-                        <div id="aiExplanation" class="small text-muted">Awaiting scan...</div>
-                    </div>
-                </div>
+            <div id="aiBox">
+                <span class="result-label" style="color: #fff;">FORENSIC_SUMMARY</span>
+                <div id="aiExplanation">INITIALIZING ANALYSIS...</div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
-    const loading = document.getElementById('loading');
     const results = document.getElementById('results');
-    
     let map = null, marker = null;
 
     uploadArea.onclick = () => fileInput.click();
     fileInput.onchange = (e) => { if (e.target.files.length) handleFileUpload(e.target.files[0]); };
 
     async function handleFileUpload(file) {
-        loading.style.display = 'block';
+        document.getElementById('loading').style.display = 'block';
         results.style.display = 'none';
         const formData = new FormData();
         formData.append('file', file);
@@ -171,27 +114,33 @@
             const response = await fetch('/api/extract', { method: 'POST', body: formData });
             const data = await response.json();
             displayResults(data, file.name);
-        } catch (error) { alert('Scan failed.'); } finally { loading.style.display = 'none'; }
+        } catch (error) { alert('ERROR'); } finally { document.getElementById('loading').style.display = 'none'; }
     }
 
     function displayResults(data, fileName) {
-        document.getElementById('fileNameDisplay').textContent = fileName.toUpperCase();
         results.style.display = 'block';
-        document.getElementById('val-capture-time').textContent = data.DateTimeOriginal || 'N/A';
-        document.getElementById('val-device').textContent = (data.Make || data.Model) ? `${data.Make || ''} ${data.Model || ''}` : 'N/A';
-        document.getElementById('aiExplanation').textContent = data.ai_summary || 'No AI summary available.';
+        document.getElementById('fileNameDisplay').textContent = fileName.toUpperCase();
+        
+        // SMART SEARCH FOR DATE
+        const date = data.DateTimeOriginal || data.CreateDate || data.ModifyDate || data.FileModifyDate || "NO DATE DATA FOUND";
+        document.getElementById('val-date').textContent = date;
+
+        // SMART SEARCH FOR DEVICE
+        const device = (data.Make || data.Model) ? `${data.Make || ''} ${data.Model || ''}` : "UNKNOWN DEVICE";
+        document.getElementById('val-device').textContent = device;
+
+        document.getElementById('aiExplanation').textContent = data.ai_summary;
 
         if (data.gps) {
-            document.getElementById('gps-container').style.display = 'block';
+            document.getElementById('map-container').style.display = 'block';
             if (!map) {
                 map = L.map('map').setView([data.gps.lat, data.gps.lon], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             } else { map.setView([data.gps.lat, data.gps.lon], 13); }
             if (marker) map.removeLayer(marker);
             marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
-            setTimeout(() => map.invalidateSize(), 500);
         } else {
-            document.getElementById('gps-container').style.display = 'none';
+            document.getElementById('map-container').style.display = 'none';
         }
     }
 </script>
