@@ -3,63 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkyourphoto | Forensic Analysis</title>
+    <title>Checkyourphoto | Forensic Image Metadata & AI Detection</title>
+    <meta name="description" content="Extract hidden EXIF metadata. Reveal original capture dates, GPS locations, and detect AI-generated images instantly.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Silkscreen&family=Inter:wght@900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --accent: #00FF8C; --bg: #101314; }
-        body { background-color: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; }
+        body { background-color: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding-bottom: 50px; }
         .neon { color: var(--accent); text-shadow: 0 0 10px rgba(0, 255, 140, 0.5); }
-        .scan-box { border: 2px solid var(--accent); padding: 2rem; background: #000; margin-top: 2rem; }
+        .mission { font-family: 'Silkscreen'; color: var(--accent); text-align: center; font-size: 0.85rem; margin-bottom: 2rem; }
+        .scan-box { border: 2px solid var(--accent); padding: 2rem; background: #000; }
         .dropzone { border: 2px dashed var(--accent); padding: 50px; cursor: pointer; text-align: center; }
+        .instr { color: var(--accent); font-weight: 900; font-size: 1.3rem; text-shadow: 0 0 5px var(--accent); }
         
-        /* THE AVENUE BLACK STYLE (ULTRA READABLE) */
+        /* PRIVACY LINE */
+        .privacy-promise { font-family: 'Inter', sans-serif; font-weight: 700; color: #fff; background: rgba(0, 255, 140, 0.1); border: 1px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.75rem; text-transform: uppercase; display: inline-block; }
+
+        /* --- AVENUE BLACK RESULTS --- */
         #results { display: none; margin-top: 40px; background: #fff; color: #000; padding: 40px; border: 10px solid var(--accent); }
         #fileHeader { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 2.2rem; border-bottom: 8px solid #000; margin-bottom: 30px; text-transform: uppercase; }
-        .p-row { border-bottom: 1px solid #ddd; padding: 15px 0; }
-        .p-label { font-family: 'Silkscreen'; font-size: 0.75rem; color: #666; display: block; }
-        .p-value { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.6rem; line-height: 1.1; text-transform: uppercase; }
-        .not-found { color: #cc0000 !important; }
+        .p-row { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .p-label { font-family: 'Silkscreen'; font-size: 0.7rem; color: #888; display: block; margin-bottom: 3px; }
+        .p-value { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.5rem; line-height: 1.1; text-transform: uppercase; }
+        .not-found { color: #d00 !important; opacity: 0.5; }
 
-        #map { height: 350px; width: 100%; border: 4px solid #000; filter: grayscale(1); margin-top: 10px; }
-        .ai-box { background: #000; color: var(--accent); padding: 20px; margin-top: 20px; font-family: 'Inter'; font-weight: 900; font-size: 1.4rem; border-left: 10px solid var(--accent); }
+        #map { height: 350px; width: 100%; border: 4px solid #000; filter: grayscale(1); margin-top: 15px; }
+        .ai-status-box { background: #000; color: var(--accent); padding: 25px; margin-top: 30px; border-left: 12px solid var(--accent); font-family: 'Inter', sans-serif; font-weight: 900; }
+
+        /* FOOTER AREA */
+        .footer-area { margin-top: 100px; padding-top: 40px; border-top: 1px solid #222; }
+        .forensic-description { color: #666; font-size: 0.85rem; max-width: 800px; margin: 0 auto 20px auto; text-align: center; font-family: sans-serif; }
     </style>
 </head>
 <body>
 
-<div class="container text-center py-5">
-    <h1 style="font-size: 4rem; font-weight: 900;" class="neon">CHECK YOUR PHOTO</h1>
-    <p class="mission" style="font-family: 'Silkscreen'; color: var(--accent);">Scan your photo or image and reveal the hidden forensic data.</p>
+<div class="container text-center">
+    <div class="mt-5 mb-4">
+        <h1 style="font-size: 4rem; font-weight: 900;" class="neon">CHECK YOUR PHOTO</h1>
+        <p class="mission">Scan your photo or image and reveal the hidden forensic data.</p>
+    </div>
 
     <div class="scan-box">
         <div class="dropzone" id="uploadArea">
-            <h3 style="color: var(--accent); font-weight: 900;">INITIATE FORENSIC SCAN</h3>
-            <p style="color: var(--accent);">DRAG FILE OR CLICK TO BROWSE</p>
+            <div class="instr">INITIATE FORENSIC SCAN</div>
+            <p class="small mt-2 mb-0" style="color: var(--accent);">DRAG FILE HERE OR CLICK TO BROWSE</p>
             <input type="file" id="fileInput" class="d-none">
         </div>
-        <div id="loader" class="mt-4" style="display:none;"><h2 class="text-success">DECRYPTING...</h2></div>
+        <div class="privacy-promise">
+            <i class="bi bi-shield-lock-fill"></i> PRIVACY GUARANTEE: NO SCANS ARE STORED. DATA IS PURGED UPON CLOSING.
+        </div>
+        <div id="loader" class="mt-4" style="display:none;"><h3 class="text-success">SCANNING_BYTES...</h3></div>
 
         <div id="results" class="text-start">
             <div id="fileHeader">TARGET_ID</div>
             <div class="row">
-                <div class="col-md-6 p-row"><span class="p-label">ORIGINAL GENERATION DATE</span><div class="p-value" id="res-created">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">LAST MODIFICATION DATE</span><div class="p-value" id="res-modified">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">ORIGINAL DEVICE IDENTITY</span><div class="p-value" id="res-device">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">RESOLUTION INTEGRITY</span><div class="p-value" id="res-size">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Original Generation Date</span><div class="p-value" id="res-created">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Last Modification Date</span><div class="p-value" id="res-modified">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Original Device Identity</span><div class="p-value" id="res-device">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Resolution Integrity</span><div class="p-value" id="res-size">---</div></div>
             </div>
-
-            <!-- SPECIFIC AI DETECTION FIELD -->
-            <div class="ai-box mt-4">
+            
+            <div class="ai-status-box">
                 <span class="p-label" style="color: #fff;">AI & EDITING STATUS</span>
-                <div id="res-ai">---</div>
+                <div id="res-ai" style="font-size: 1.4rem;">ANALYZING...</div>
             </div>
 
-            <div id="map-area" class="mt-4" style="display:none;">
-                <span class="p-label">GEOLOCATION MAPPING</span>
-                <div id="map"></div>
-            </div>
+            <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Geolocation Mapping</span><div id="map"></div></div>
         </div>
+    </div>
+
+    <div class="footer-area">
+        <div class="forensic-description">
+            <h6 class="mb-3" style="color: #777; font-family: 'Silkscreen'; font-size: 0.9rem;">Professional Forensic Image Analysis Tool</h6>
+            Checkyourphoto is a specialized digital forensics tool designed to extract hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong> of a photo, pinpoint the <strong>GPS location</strong> where an image was captured, and identify the <strong>hardware identity</strong> of the device used. Our forensic engine also detects <strong>AI-generated images</strong> (Midjourney, DALL-E) and traces of digital manipulation from software like Adobe Photoshop or Canva. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.
+        </div>
+        <p style="color: #555; font-family: 'Silkscreen'; font-size: 0.75rem;">© 2026 CHECKYOURPHOTO // ZERO-STORAGE POLICY ENFORCED</p>
     </div>
 </div>
 
@@ -69,10 +89,9 @@
     const fileInput = document.getElementById('fileInput');
     const results = document.getElementById('results');
     let map = null, marker = null;
-
     uploadArea.onclick = () => fileInput.click();
     fileInput.onchange = (e) => { if (e.target.files.length) handleFileUpload(e.target.files[0]); };
-
+    
     async function handleFileUpload(file) {
         document.getElementById('loader').style.display = 'block';
         results.style.display = 'none';
@@ -82,28 +101,23 @@
             const response = await fetch('/api/extract', { method: 'POST', body: formData });
             const data = await response.json();
             displayResults(data, file.name);
-        } catch (error) { alert('ERROR'); } finally { document.getElementById('loader').style.display = 'none'; }
+        } catch (error) { alert('SCAN ERROR'); } finally { document.getElementById('loader').style.display = 'none'; }
     }
 
     function displayResults(data, fileName) {
         results.style.display = 'block';
         document.getElementById('fileHeader').textContent = fileName.toUpperCase();
-        
         const set = (id, val) => {
             const el = document.getElementById(id);
-            if (!val || val === "null" || val === "undefined") {
-                el.textContent = "NOT DETECTED"; el.classList.add('not-found');
-            } else {
-                el.textContent = val.toUpperCase(); el.classList.remove('not-found');
-            }
+            if (!val || val === "null" || val === "undefined") { el.textContent = "NOT DETECTED"; el.classList.add('not-found'); }
+            else { el.textContent = val.toUpperCase(); el.classList.remove('not-found'); }
         };
-
         set('res-created', data.display_created);
         set('res-modified', data.display_modified);
-        set('res-device', (data.Make || data.Model) ? `${data.Make || ''} ${data.Model || ''}` : null);
+        set('res-device', (data.Make || data.Model) ? `${data.Make} ${data.Model}` : null);
         set('res-size', (data.ImageWidth) ? `${data.ImageWidth} X ${data.ImageHeight}` : null);
         set('res-ai', data.display_ai);
-
+        
         if (data.gps) {
             document.getElementById('map-area').style.display = 'block';
             if (!map) {
@@ -113,9 +127,7 @@
             if (marker) map.removeLayer(marker);
             marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
             setTimeout(() => map.invalidateSize(), 500);
-        } else {
-            document.getElementById('map-area').style.display = 'none';
-        }
+        } else { document.getElementById('map-area').style.display = 'none'; }
     }
 </script>
 </body>
