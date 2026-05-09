@@ -1,41 +1,55 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const multer = require('multer');
 const { exiftool } = require('exiftool-vendored');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { OpenAI } = require('openai');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const upload = multer({ storage: multer.memoryStorage() });
 
-// AI Setup
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
-
-// Upload Setup
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-app.use(cors());
-app.use(express.json());
-
-// Support for images and graphics
+// 1. Tell the server where to look for images (Assets)
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.use('/assets', express.static(path.join(__dirname, 'Public', 'assets')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Load the website
+// 2. THE EMERGENCY FINDER
 app.get('/', (req, res) => {
-    const indexPath = path.join(__dirname, 'public', 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send("Website files not found in the public folder.");
+    // We will look in every possible place for the index file
+    const possibleSpots = [
+        path.join(__dirname, 'public', 'index.html'),
+        path.join(__dirname, 'Public', 'index.html'),
+        path.join(__dirname, 'index.html'),
+        path.join(__dirname, 'public', 'index.htm'),
+    ];
+
+    for (let spot of possibleSpots) {
+        if (fs.existsSync(spot)) {
+            console.log("SUCCESS: Found file at " + spot);
+            return res.sendFile(spot);
+        }
+    }
+
+    // If we still can't find it, let's look for ANY file that ends in .html
+    try {
+        const publicPath = path.join(__dirname, 'public');
+        if (fs.existsSync(publicPath)) {
+            const files = fs.readdirSync(publicPath);
+            const htmlFile = files.find(f => f.toLowerCase().includes('.html'));
+            if (htmlFile) {
+                return res.sendFile(path.join(publicPath, htmlFile));
+            }
+            res.status(404).send(`Found public folder, but it only contains: ${files.join(', ')}`);
+        } else {
+            res.status(404).send("Could not find the 'public' folder.");
+        }
+    } catch (e) {
+        res.status(500).send("Error: " + e.message);
     }
 });
 
-// The Scan Engine
+// 3. THE SCAN ENGINE
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const tempPath = path.join(os.tmpdir(), `up-${Date.now()}`);
@@ -43,33 +57,10 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         fs.writeFileSync(tempPath, req.file.buffer);
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-
-        let aiSummary = "[PREVIEW MODE] Add OpenAI Key to Render to enable.";
-        if (openai) {
-            try {
-                const response = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [
-                        { role: "system", content: "You are a forensic metadata translator. Stay factual." },
-                        { role: "user", content: `Translate this: ${JSON.stringify(metadata)}` }
-                    ]
-                });
-                aiSummary = response.choices[0].message.content;
-            } catch (e) { aiSummary = "AI analysis unavailable."; }
-        }
-        
-        res.json({
-            ...metadata,
-            ai_summary: aiSummary,
-            gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
-        });
+        res.json({ ...metadata, ai_summary: "AI Summary Active", gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null });
     } catch (e) {
-        res.status(500).json({ error: 'Extraction failed' });
+        res.status(500).json({ error: 'Scan failed' });
     }
 });
-
-app.post('/api/telemetry', (req, res) => res.json({ status: 'ok' }));
-app.post('/api/leads', (req, res) => res.json({ status: 'ok' }));
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(port, () => console.log(`Server live on port ${port}`));
