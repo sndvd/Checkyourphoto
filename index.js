@@ -21,33 +21,21 @@ const upload = multer({ storage: storage });
 app.use(cors());
 app.use(express.json());
 
-/**
- * 1. THE IMAGE FIX
- * This tells the server to look for images in every possible folder
- */
+// Support for images and graphics
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname));
 
-/**
- * 2. THE WEBSITE FIX
- * This forces index.html to load correctly
- */
+// Load the website
 app.get('/', (req, res) => {
-    const spots = [
-        path.join(__dirname, 'public', 'index.html'),
-        path.join(__dirname, 'index.html')
-    ];
-    for (let spot of spots) {
-        if (fs.existsSync(spot)) return res.sendFile(spot);
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send("Website files not found in the public folder.");
     }
-    res.status(404).send("Website files not found. Please check your public folder on GitHub.");
 });
 
-/**
- * 3. THE SCAN ENGINE (Initiate Scan)
- */
+// The Scan Engine
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const tempPath = path.join(os.tmpdir(), `up-${Date.now()}`);
@@ -56,7 +44,7 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 
-        let aiSummary = "[PREVIEW MODE] To enable AI analysis, add your OpenAI Key to Render.";
+        let aiSummary = "[PREVIEW MODE] Add OpenAI Key to Render to enable.";
         if (openai) {
             try {
                 const response = await openai.chat.completions.create({
@@ -80,9 +68,8 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
     }
 });
 
-// Placeholders for other buttons
 app.post('/api/telemetry', (req, res) => res.json({ status: 'ok' }));
 app.post('/api/leads', (req, res) => res.json({ status: 'ok' }));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(port, () => console.log(`Server is running on port ${port}`));
+app.listen(port, () => console.log(`Server live on port ${port}`));
