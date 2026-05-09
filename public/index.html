@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkyourphoto | Professional Forensic Image Analysis</title>
-    <meta name="description" content="Professional forensic tool to extract hidden metadata. Reveal original dates, GPS locations, and detect AI signatures instantly. You decide what it means.">
+    <meta name="description" content="Extract hidden metadata. Reveal original capture dates and detect AI signatures. You decide what it means.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Silkscreen&family=Inter:wght@900&display=swap" rel="stylesheet">
@@ -15,14 +15,14 @@
         .neon { color: var(--accent); text-shadow: 0 0 10px rgba(0, 255, 140, 0.5); }
         .mission { font-family: 'Inter', sans-serif; font-weight: 900; color: #fff; text-align: center; font-size: 1.1rem; margin-bottom: 0.5rem; text-transform: uppercase; }
         .promise { font-family: 'Silkscreen'; color: var(--accent); text-align: center; font-size: 0.8rem; margin-bottom: 2rem; }
-
         .scan-box { border: 2px solid var(--accent); padding: 2rem; background: #000; }
         .dropzone { border: 2px dashed var(--accent); padding: 50px; cursor: pointer; text-align: center; }
         .instr { color: var(--accent); font-weight: 900; font-size: 1.3rem; }
         .privacy-promise { font-family: 'Inter', sans-serif; font-weight: 700; background: rgba(0, 255, 140, 0.1); border: 1px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.75rem; text-transform: uppercase; display: inline-block; }
 
-        /* --- AVENUE BLACK RESULTS (HIGH CONTRAST) --- */
+        /* AVENUE BLACK RESULTS */
         #results { display: none; margin-top: 40px; background: #fff; color: #000; padding: 40px; border: 10px solid var(--accent); }
+        .legal-tag { background: #000; color: var(--accent); padding: 8px; font-family: 'Silkscreen'; font-size: 0.7rem; margin-bottom: 25px; text-align: center; }
         #fileHeader { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 2.2rem; border-bottom: 8px solid #000; margin-bottom: 30px; text-transform: uppercase; }
         .p-row { border-bottom: 1px solid #eee; padding: 15px 0; }
         .p-label { font-family: 'Silkscreen'; font-size: 0.7rem; color: #888; display: block; }
@@ -31,7 +31,6 @@
 
         .observation-box { background: #000; color: var(--accent); padding: 25px; margin-top: 30px; border-left: 12px solid var(--accent); font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.3rem; }
         #map { height: 350px; width: 100%; border: 4px solid #000; filter: grayscale(1); margin-top: 15px; }
-        
         .footer-area { margin-top: 100px; padding-top: 40px; border-top: 1px solid #222; text-align: center; }
         .forensic-description { color: #666; font-size: 0.85rem; max-width: 800px; margin: 0 auto 20px auto; font-family: sans-serif; }
     </style>
@@ -54,9 +53,10 @@
         <div class="privacy-promise">
             <i class="bi bi-shield-lock-fill"></i> PRIVACY GUARANTEE: WE DO NOT STORE ANY SCANS. ALL SCANS ARE DELETED ONCE YOU REFRESH OR CLOSE THIS WEBSITE.
         </div>
-        <div id="loader" class="mt-4" style="display:none;"><h3 class="text-success">SCANNING_BYTES...</h3></div>
+        <div id="loader" class="text-center mt-4" style="display:none;"><h3 class="text-success">SCANNING_BYTES...</h3></div>
 
         <div id="results" class="text-start">
+            <div class="legal-tag">FORENSIC NOTICE: DATA IS OBSERVED FROM FILE CODE ONLY. GUARANTEE OF TRUTH NOT IMPLIED.</div>
             <div id="fileHeader">TARGET_FILE</div>
             <div class="row">
                 <div class="col-md-6 p-row"><span class="p-label">Embedded Capture Date</span><div class="p-value" id="res-created">---</div></div>
@@ -64,9 +64,7 @@
                 <div class="col-md-6 p-row"><span class="p-label">Reported Device Identity</span><div class="p-value" id="res-device">---</div></div>
                 <div class="col-md-6 p-row"><span class="p-label">Resolution Integrity</span><div class="p-value" id="res-size">---</div></div>
             </div>
-            
-            <div class="observation-box" id="res-observation">INITIALIZING OBSERVATION...</div>
-
+            <div class="observation-box" id="res-observation">---</div>
             <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Geolocation Fix</span><div id="map"></div></div>
         </div>
     </div>
@@ -74,7 +72,7 @@
     <div class="footer-area">
         <div class="forensic-description">
             <h6 class="mb-3" style="color: #777; font-family: 'Silkscreen'; font-size: 0.9rem;">Professional Forensic Image Analysis Tool</h6>
-            Checkyourphoto is a specialized digital forensics tool designed to extract hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong>, pinpoint <strong>GPS locations</strong>, and identify <strong>hardware signatures</strong>. Our forensic engine also detects traces of digital manipulation or AI tools. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.
+            Checkyourphoto extracts hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong>, pinpoint <strong>GPS locations</strong>, and identify <strong>hardware signatures</strong>. Our forensic engine also detects traces of digital manipulation or AI tools. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.
         </div>
         <p style="color: #555; font-family: 'Silkscreen'; font-size: 0.75rem;">© 2026 CHECKYOURPHOTO // ZERO-STORAGE POLICY ENFORCED</p>
     </div>
@@ -106,11 +104,11 @@
         document.getElementById('fileHeader').textContent = fileName.toUpperCase();
         const set = (id, val) => {
             const el = document.getElementById(id);
-            if (!val || val === "null" || val === "undefined") { el.textContent = "NOT DETECTED"; el.classList.add('not-found'); }
+            if (!val || val === "null" || val === "undefined") { el.textContent = "NOT EMBEDDED"; el.classList.add('not-found'); }
             else { el.textContent = val.toString().toUpperCase(); el.classList.remove('not-found'); }
         };
         set('res-created', data.display_captured);
-        set('res-modified', data.display_modified);
+        set('res-modified', data.display_edited);
         set('res-device', (data.Make || data.Model) ? `${data.Make} ${data.Model}` : null);
         set('res-size', (data.ImageWidth) ? `${data.ImageWidth} X ${data.ImageHeight}` : null);
         
