@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkyourphoto | Professional Forensic Image Analysis</title>
-    <meta name="description" content="Extract hidden metadata. Reveal original capture dates and detect AI signatures. You decide what it means.">
+    <meta name="description" content="Extract hidden metadata. Reveal original capture dates, GPS locations, and detect AI signatures. You decide what it means.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Silkscreen&family=Inter:wght@900&display=swap" rel="stylesheet">
@@ -24,9 +24,9 @@
         #results { display: none; margin-top: 40px; background: #fff; color: #000; padding: 40px; border: 10px solid var(--accent); }
         .legal-tag { background: #000; color: var(--accent); padding: 8px; font-family: 'Silkscreen'; font-size: 0.7rem; margin-bottom: 25px; text-align: center; }
         #fileHeader { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 2.2rem; border-bottom: 8px solid #000; margin-bottom: 30px; text-transform: uppercase; }
-        .p-row { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .p-row { border-bottom: 1px solid #eee; padding: 12px 0; }
         .p-label { font-family: 'Silkscreen'; font-size: 0.7rem; color: #888; display: block; }
-        .p-value { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.6rem; line-height: 1.1; text-transform: uppercase; }
+        .p-value { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.4rem; line-height: 1.1; text-transform: uppercase; }
         .not-found { color: #d00 !important; opacity: 0.4; }
 
         .observation-box { background: #000; color: var(--accent); padding: 25px; margin-top: 30px; border-left: 12px solid var(--accent); font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.3rem; }
@@ -61,11 +61,13 @@
             <div class="row">
                 <div class="col-md-6 p-row"><span class="p-label">Embedded Capture Date</span><div class="p-value" id="res-created">---</div></div>
                 <div class="col-md-6 p-row"><span class="p-label">Last Software Save</span><div class="p-value" id="res-modified">---</div></div>
+                <!-- LOCATION TEXT FIELD -->
+                <div class="col-md-6 p-row"><span class="p-label">Capture Location (GPS)</span><div class="p-value" id="res-gps">---</div></div>
                 <div class="col-md-6 p-row"><span class="p-label">Reported Device Identity</span><div class="p-value" id="res-device">---</div></div>
                 <div class="col-md-6 p-row"><span class="p-label">Resolution Integrity</span><div class="p-value" id="res-size">---</div></div>
             </div>
             <div class="observation-box" id="res-observation">---</div>
-            <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Geolocation Fix</span><div id="map"></div></div>
+            <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Geolocation Mapping</span><div id="map"></div></div>
         </div>
     </div>
 
@@ -114,7 +116,9 @@
         
         document.getElementById('res-observation').textContent = data.display_observation;
         
+        // --- LOCATION HANDLING ---
         if (data.gps) {
+            set('res-gps', `${data.gps.lat.toFixed(6)}, ${data.gps.lon.toFixed(6)}`);
             document.getElementById('map-area').style.display = 'block';
             if (!map) {
                 map = L.map('map').setView([data.gps.lat, data.gps.lon], 13);
@@ -123,7 +127,10 @@
             if (marker) map.removeLayer(marker);
             marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
             setTimeout(() => map.invalidateSize(), 500);
-        } else { document.getElementById('map-area').style.display = 'none'; }
+        } else { 
+            set('res-gps', null);
+            document.getElementById('map-area').style.display = 'none'; 
+        }
     }
 </script>
 </body>
