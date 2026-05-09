@@ -1,66 +1,32 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
-const multer = require('multer');
-const { exiftool } = require('exiftool-vendored');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const upload = multer({ storage: multer.memoryStorage() });
 
-// 1. Tell the server where to look for images (Assets)
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.use('/assets', express.static(path.join(__dirname, 'Public', 'assets')));
+// 1. This tells the server: "Look in the 'public' folder for everything"
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. THE EMERGENCY FINDER
+// 2. This is the code for the main page
 app.get('/', (req, res) => {
-    // We will look in every possible place for the index file
-    const possibleSpots = [
-        path.join(__dirname, 'public', 'index.html'),
-        path.join(__dirname, 'Public', 'index.html'),
-        path.join(__dirname, 'index.html'),
-        path.join(__dirname, 'public', 'index.htm'),
-    ];
-
-    for (let spot of possibleSpots) {
-        if (fs.existsSync(spot)) {
-            console.log("SUCCESS: Found file at " + spot);
-            return res.sendFile(spot);
-        }
-    }
-
-    // If we still can't find it, let's look for ANY file that ends in .html
-    try {
-        const publicPath = path.join(__dirname, 'public');
-        if (fs.existsSync(publicPath)) {
-            const files = fs.readdirSync(publicPath);
-            const htmlFile = files.find(f => f.toLowerCase().includes('.html'));
-            if (htmlFile) {
-                return res.sendFile(path.join(publicPath, htmlFile));
-            }
-            res.status(404).send(`Found public folder, but it only contains: ${files.join(', ')}`);
-        } else {
-            res.status(404).send("Could not find the 'public' folder.");
-        }
-    } catch (e) {
-        res.status(500).send("Error: " + e.message);
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    
+    if (fs.existsSync(indexPath)) {
+        // If it finds your file, it will show your website
+        res.sendFile(indexPath);
+    } else {
+        // If it can't find it, it will show this message instead
+        res.send(`
+            <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+                <h1>🚀 Server is Running!</h1>
+                <p>I can see your server, but I can't find your <strong>index.html</strong> file.</p>
+                <p>On GitHub, make sure you have a folder named <strong>public</strong> and the file is inside it.</p>
+            </div>
+        `);
     }
 });
 
-// 3. THE SCAN ENGINE
-app.post('/api/extract', upload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    const tempPath = path.join(os.tmpdir(), `up-${Date.now()}`);
-    try {
-        fs.writeFileSync(tempPath, req.file.buffer);
-        const metadata = await exiftool.read(tempPath, ["-n"]);
-        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-        res.json({ ...metadata, ai_summary: "AI Summary Active", gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null });
-    } catch (e) {
-        res.status(500).json({ error: 'Scan failed' });
-    }
+app.listen(port, () => {
+    console.log(`App is live on port ${port}`);
 });
-
-app.listen(port, () => console.log(`Server live on port ${port}`));
