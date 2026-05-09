@@ -16,28 +16,22 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
     const tempPath = path.join(os.tmpdir(), `scan-${Date.now()}`);
     try {
         fs.writeFileSync(tempPath, req.file.buffer);
+        // We use -n to get decimal numbers, and -G to look at all metadata groups
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
         
-        // --- FORENSIC DATE LOGIC ---
-        // We IGNORE 'FileModifyDate' because it often shows the time of upload (misleading)
-        // We only pull dates that are EMBEDDED in the image data
+        // --- DEEP GPS HUNT ---
+        const lat = metadata.GPSLatitude || metadata.GPSDestLatitude || (metadata.Composite && metadata.Composite.GPSLatitude);
+        const lon = metadata.GPSLongitude || metadata.GPSDestLongitude || (metadata.Composite && metadata.Composite.GPSLongitude);
+
         const captureDate = metadata.DateTimeOriginal || metadata.CreationDate || metadata.DateCreated;
         const softwareDate = metadata.ModifyDate || metadata.MetadataDate;
-
-        let aiSummary = "ANALYSIS COMPLETE. ";
-        if (!captureDate) {
-            aiSummary += "ALERT: EMBEDDED DATE DATA STRIPPED. Your computer may show a 'Created' date, but that is a local system record, not part of the photo's internal identity. ";
-        } else {
-            aiSummary += "INTERNAL CAMERA SIGNATURE DETECTED. ";
-        }
 
         res.json({
             ...metadata,
             display_captured: captureDate ? captureDate.toString() : null,
             display_edited: softwareDate ? softwareDate.toString() : null,
-            ai_summary: aiSummary,
-            gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
+            gps: (lat && lon) ? { lat: parseFloat(lat), lon: parseFloat(lon) } : null
         });
     } catch (e) { res.status(500).json({ error: 'Scan failed' }); }
 });
@@ -48,4 +42,4 @@ app.get('/', (req, res) => {
     else res.status(404).send("index.html missing");
 });
 
-app.listen(port, () => console.log(`Forensic Engine Active`));
+app.listen(port, () => console.log(`Forensic System Online`));
