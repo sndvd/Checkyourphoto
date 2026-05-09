@@ -19,32 +19,25 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
         
-        // --- DEEP DATE SEARCH ---
-        // We look for every possible date tag in the file
-        const created = metadata.DateTimeOriginal || metadata.CreateDate || metadata.CreationDate || metadata.DateCreated || metadata.DateTimeDigitized;
-        const modified = metadata.FileModifyDate || metadata.ModifyDate || metadata.MetadataDate;
+        // --- FORENSIC DATE LOGIC ---
+        // We IGNORE 'FileModifyDate' because it often shows the time of upload (misleading)
+        // We only pull dates that are EMBEDDED in the image data
+        const captureDate = metadata.DateTimeOriginal || metadata.CreationDate || metadata.DateCreated;
+        const softwareDate = metadata.ModifyDate || metadata.MetadataDate;
 
-        // --- DEEP AI & EDIT SEARCH ---
-        let aiDetection = "NO AI SIGNATURE DETECTED";
-        const allText = JSON.stringify(metadata).toLowerCase();
-        const software = (metadata.Software || metadata.CreatorTool || "").toLowerCase();
-        
-        if (software.includes('photoshop') || software.includes('canva') || software.includes('gimp')) {
-            aiDetection = "DIGITAL ALTERATION DETECTED (SOFTWARE)";
-        } else if (allText.includes('midjourney') || allText.includes('dall-e') || allText.includes('stable diffusion') || allText.includes('ai generated') || allText.includes('generative')) {
-            aiDetection = "AI GENERATION SIGNATURE DETECTED";
+        let aiSummary = "ANALYSIS COMPLETE. ";
+        if (!captureDate) {
+            aiSummary += "ALERT: EMBEDDED DATE DATA STRIPPED. Your computer may show a 'Created' date, but that is a local system record, not part of the photo's internal identity. ";
+        } else {
+            aiSummary += "INTERNAL CAMERA SIGNATURE DETECTED. ";
         }
-
-        // --- DEEP GPS SEARCH ---
-        const lat = metadata.GPSLatitude || metadata.GPSDestLatitude;
-        const lon = metadata.GPSLongitude || metadata.GPSDestLongitude;
 
         res.json({
             ...metadata,
-            display_created: created ? created.toString() : null,
-            display_modified: modified ? modified.toString() : null,
-            display_ai: aiDetection,
-            gps: (lat && lon) ? { lat, lon } : null
+            display_captured: captureDate ? captureDate.toString() : null,
+            display_edited: softwareDate ? softwareDate.toString() : null,
+            ai_summary: aiSummary,
+            gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
         });
     } catch (e) { res.status(500).json({ error: 'Scan failed' }); }
 });
