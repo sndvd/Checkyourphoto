@@ -5,33 +5,49 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-    // This function looks at every file and folder you have
-    const getDirectoryTree = (dir) => {
-        const stats = fs.lstatSync(dir);
-        const info = { name: path.basename(dir) };
-        if (stats.isDirectory()) {
-            info.type = "folder";
-            info.children = fs.readdirSync(dir).map(child => getDirectoryTree(path.join(dir, child)));
-        } else {
-            info.type = "file";
-            info.size = stats.size;
+/**
+ * THE MASTER FINDER
+ * This searches every folder in your project to find index.html
+ */
+function findIndexHtml(dir) {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const fullPath = path.join(dir, file);
+        const stat = fs.lstatSync(fullPath);
+        
+        if (stat.isDirectory()) {
+            // Don't look in these folders, they are too big
+            if (file === 'node_modules' || file === '.git') continue;
+            const found = findIndexHtml(fullPath);
+            if (found) return found;
+        } else if (file.toLowerCase().includes('index.html')) {
+            return fullPath;
         }
-        return info;
-    };
+    }
+    return null;
+}
 
-    const tree = getDirectoryTree(__dirname);
-
-    // This displays your files on the screen so we can see the mistake
-    res.send(`
-        <div style="font-family: monospace; background: #111; color: #0f0; padding: 20px; min-height: 100vh;">
-            <h1>📁 PROJECT FILE EXPLORER</h1>
-            <p>I am searching for index.html. Here is what I found:</p>
-            <pre>${JSON.stringify(tree, null, 4)}</pre>
-            <hr>
-            <p>If you see your index.html listed above, look at its "name" carefully.</p>
-        </div>
-    `);
+app.get('/', (req, res) => {
+    const filePath = findIndexHtml(__dirname);
+    if (filePath) {
+        console.log(">>> SUCCESS: Serving website from " + filePath);
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send("Error: Could not find index.html anywhere in your GitHub project.");
+    }
 });
 
-app.listen(port, () => console.log(`Debug server live`));
+// This part makes sure your icons (assets) load no matter where they are
+app.use('/assets', (req, res, next) => {
+    const spots = [
+        path.join(__dirname, 'public', 'assets', req.url),
+        path.join(__dirname, 'assets', req.url),
+        path.join(__dirname, 'Public', 'assets', req.url)
+    ];
+    for (let spot of spots) {
+        if (fs.existsSync(spot)) return res.sendFile(spot);
+    }
+    next();
+});
+
+app.listen(port, () => console.log(`Server live on port ${port}`));
