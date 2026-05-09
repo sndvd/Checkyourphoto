@@ -23,9 +23,7 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         const software = (metadata.Software || metadata.CreatorTool || "").toLowerCase();
         const lat = metadata.GPSLatitude || (metadata.Composite && metadata.Composite.GPSLatitude);
 
-        // --- HUMAN-READABLE SUMMARY ---
         let humanSummary = "SCANNED. ";
-        
         if (software.includes('photoshop') || software.includes('canva') || software.includes('gimp')) {
             humanSummary = "⚠️ ALERT: This photo has been edited in a software program like Photoshop or Canva.";
         } else if (software.includes('midjourney') || software.includes('dall-e') || JSON.stringify(metadata).toLowerCase().includes('ai')) {
