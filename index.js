@@ -5,52 +5,40 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// This function finds the real path to index.html no matter where it is hiding
-function findFile(startPath, targetName) {
-    if (!fs.existsSync(startPath)) return null;
-    const files = fs.readdirSync(startPath);
-    for (let i = 0; i < files.length; i++) {
-        const filename = path.join(startPath, files[i]);
-        const stat = fs.lstatSync(filename);
-        if (stat.isDirectory()) {
-            const found = findFile(filename, targetName);
-            if (found) return found;
-        } else if (files[i].toLowerCase() === targetName.toLowerCase()) {
-            return filename;
-        }
-    }
-    return null;
-}
+// 1. Tell the server to look for files in the 'public' folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-    console.log("Looking for index.html...");
-    const indexPath = findFile(__dirname, 'index.html');
+    // Let's look exactly at the path we expect
+    const expectedPath = path.join(__dirname, 'public', 'index.html');
     
-    if (indexPath) {
-        console.log("FOUND AT: " + indexPath);
-        res.sendFile(indexPath);
+    if (fs.existsSync(expectedPath)) {
+        res.sendFile(expectedPath);
     } else {
-        // This will tell us what the server actually sees
-        const allFiles = [];
-        const walk = (dir) => {
-            fs.readdirSync(dir).forEach(f => {
-                let p = path.join(dir, f);
-                if (fs.statSync(p).isDirectory()) walk(p);
-                else allFiles.push(p.replace(__dirname, ''));
-            });
+        // If it's not there, let's see what IS in that folder
+        let contents = "Folder 'public' is empty or not found.";
+        try {
+            const publicDir = path.join(__dirname, 'public');
+            if (fs.existsSync(publicDir)) {
+                contents = fs.readdirSync(publicDir).join(', ');
+            }
+        } catch (e) {
+            contents = "Error reading public folder: " + e.message;
         }
-        try { walk(__dirname); } catch(e) {}
-        
+
         res.status(404).send(`
-            <h1>Still can't find index.html</h1>
-            <p>I searched everywhere. Here are all the files I found:</p>
-            <pre>${allFiles.join('\n')}</pre>
+            <h1>Almost there!</h1>
+            <p>The server is live, but <strong>index.html</strong> is missing from the <strong>public</strong> folder.</p>
+            <p><strong>Inside your 'public' folder, I see:</strong> ${contents}</p>
+            <hr>
+            <p><strong>How to fix:</strong></p>
+            <ol>
+                <li>Go to GitHub.</li>
+                <li>Open the <strong>public</strong> folder.</li>
+                <li>Make sure there is a file named exactly <strong>index.html</strong> (all lowercase).</li>
+            </ol>
         `);
     }
 });
 
-// Help the server find the assets folder
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
-
-app.listen(port, () => console.log(`Server is running on port ${port}`));
+app.listen(port, () => console.log(`Server live on port ${port}`));
