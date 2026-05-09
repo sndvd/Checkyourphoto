@@ -5,47 +5,52 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-function deepSearch(dir, fileName) {
-    let results = [];
-    const list = fs.readdirSync(dir);
-    for (let file of list) {
-        file = path.resolve(dir, file);
-        const stat = fs.statSync(file);
-        if (stat && stat.isDirectory()) {
-            results = results.concat(deepSearch(file, fileName));
-        } else if (file.toLowerCase().endsWith(fileName.toLowerCase())) {
-            results.push(file);
+// This function finds the real path to index.html no matter where it is hiding
+function findFile(startPath, targetName) {
+    if (!fs.existsSync(startPath)) return null;
+    const files = fs.readdirSync(startPath);
+    for (let i = 0; i < files.length; i++) {
+        const filename = path.join(startPath, files[i]);
+        const stat = fs.lstatSync(filename);
+        if (stat.isDirectory()) {
+            const found = findFile(filename, targetName);
+            if (found) return found;
+        } else if (files[i].toLowerCase() === targetName.toLowerCase()) {
+            return filename;
         }
     }
-    return results;
+    return null;
 }
 
 app.get('/', (req, res) => {
-    console.log("Searching for index.html...");
-    const matches = deepSearch(__dirname, 'index.html');
+    console.log("Looking for index.html...");
+    const indexPath = findFile(__dirname, 'index.html');
     
-    if (matches.length > 0) {
-        console.log("Found it at: " + matches[0]);
-        res.sendFile(matches[0]);
+    if (indexPath) {
+        console.log("FOUND AT: " + indexPath);
+        res.sendFile(indexPath);
     } else {
-        // Look inside the public folder to see what's in there
-        let publicContents = "Folder 'public' not found.";
-        const publicPath = path.join(__dirname, 'public');
-        if (fs.existsSync(publicPath)) {
-            publicContents = fs.readdirSync(publicPath).join(', ');
+        // This will tell us what the server actually sees
+        const allFiles = [];
+        const walk = (dir) => {
+            fs.readdirSync(dir).forEach(f => {
+                let p = path.join(dir, f);
+                if (fs.statSync(p).isDirectory()) walk(p);
+                else allFiles.push(p.replace(__dirname, ''));
+            });
         }
-
+        try { walk(__dirname); } catch(e) {}
+        
         res.status(404).send(`
-            <h1>File Not Found</h1>
-            <p>I looked everywhere for <strong>index.html</strong> but it's not here.</p>
-            <p><strong>Contents of your 'public' folder:</strong> ${publicContents}</p>
-            <hr>
-            <p>Check if your file is named exactly <strong>index.html</strong> (not index.html.txt).</p>
+            <h1>Still can't find index.html</h1>
+            <p>I searched everywhere. Here are all the files I found:</p>
+            <pre>${allFiles.join('\n')}</pre>
         `);
     }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+// Help the server find the assets folder
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-app.listen(port, () => console.log(`Server live on port ${port}`));
+app.listen(port, () => console.log(`Server is running on port ${port}`));
