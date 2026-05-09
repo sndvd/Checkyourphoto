@@ -1,5 +1,3 @@
-console.log(">>> SMART BOOT INITIATED...");
-
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -7,50 +5,47 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-/**
- * SMART FILE FINDER
- * This looks for your index.html in several common places
- */
-function findIndexHtml() {
-    const spots = [
-        path.join(__dirname, 'public', 'index.html'),
-        path.join(__dirname, 'Public', 'index.html'),
-        path.join(__dirname, 'index.html'),
-        path.join(__dirname, 'public', 'index.HTML')
-    ];
-
-    for (let spot of spots) {
-        if (fs.existsSync(spot)) {
-            console.log(`>>> SUCCESS: Found index.html at: ${spot}`);
-            return spot;
+function deepSearch(dir, fileName) {
+    let results = [];
+    const list = fs.readdirSync(dir);
+    for (let file of list) {
+        file = path.resolve(dir, file);
+        const stat = fs.statSync(file);
+        if (stat && stat.isDirectory()) {
+            results = results.concat(deepSearch(file, fileName));
+        } else if (file.toLowerCase().endsWith(fileName.toLowerCase())) {
+            results.push(file);
         }
     }
-    return null;
+    return results;
 }
 
-// Show the website
 app.get('/', (req, res) => {
-    const indexPath = findIndexHtml();
-    if (indexPath) {
-        res.sendFile(indexPath);
+    console.log("Searching for index.html...");
+    const matches = deepSearch(__dirname, 'index.html');
+    
+    if (matches.length > 0) {
+        console.log("Found it at: " + matches[0]);
+        res.sendFile(matches[0]);
     } else {
-        // This part helps us debug if it still fails
-        const files = fs.readdirSync(__dirname);
+        // Look inside the public folder to see what's in there
+        let publicContents = "Folder 'public' not found.";
+        const publicPath = path.join(__dirname, 'public');
+        if (fs.existsSync(publicPath)) {
+            publicContents = fs.readdirSync(publicPath).join(', ');
+        }
+
         res.status(404).send(`
             <h1>File Not Found</h1>
-            <p>I looked for index.html but couldn't find it.</p>
-            <p><strong>Files I see in your project:</strong> ${files.join(', ')}</p>
-            <p>Please make sure you have a folder named <strong>public</strong> and a file named <strong>index.html</strong> inside it.</p>
+            <p>I looked everywhere for <strong>index.html</strong> but it's not here.</p>
+            <p><strong>Contents of your 'public' folder:</strong> ${publicContents}</p>
+            <hr>
+            <p>Check if your file is named exactly <strong>index.html</strong> (not index.html.txt).</p>
         `);
     }
 });
 
-// Serve images and graphics
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.use('/assets', express.static(path.join(__dirname, 'Public', 'assets')));
-
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(port, () => {
-    console.log(`>>> SERVER ACTIVE ON PORT ${port}`);
-});
+app.listen(port, () => console.log(`Server live on port ${port}`));
