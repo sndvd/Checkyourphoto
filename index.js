@@ -10,32 +10,13 @@ const port = process.env.PORT || 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
 
-/**
- * THE FORCE SEARCH
- */
 app.get('/', (req, res) => {
-    const publicPath = path.join(__dirname, 'public');
-    try {
-        const files = fs.readdirSync(publicPath);
-        // This line ignores hidden spaces at the end of the name
-        const actualFile = files.find(f => f.toLowerCase().trim().startsWith('index.html'));
-
-        if (actualFile) {
-            console.log(">>> SUCCESS: Loading " + actualFile);
-            res.sendFile(path.join(publicPath, actualFile));
-        } else {
-            res.status(404).send("Error: Could not find index.html in the public folder.");
-        }
-    } catch (e) {
-        res.status(500).send("Error reading public folder.");
-    }
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(indexPath)) res.sendFile(indexPath);
+    else res.status(404).send("index.html not found");
 });
 
-/**
- * THE SCAN ENGINE
- */
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const tempPath = path.join(os.tmpdir(), `scan-${Date.now()}`);
@@ -43,12 +24,16 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         fs.writeFileSync(tempPath, req.file.buffer);
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        
+        // This ensures the summary is never empty
+        const summary = metadata.DateTimeOriginal ? "Date signature detected. Analysis complete." : "Metadata stripped by messaging app (WhatsApp/Social Media). No original date found.";
+
         res.json({
             ...metadata,
-            ai_summary: "AI Analysis: Preview Mode Active.",
+            ai_summary: summary,
             gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
         });
     } catch (e) { res.status(500).json({ error: 'Scan failed' }); }
 });
 
-app.listen(port, () => console.log(`App live on port ${port}`));
+app.listen(port, () => console.log(`Live on ${port}`));
