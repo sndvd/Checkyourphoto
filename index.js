@@ -40,4 +40,49 @@ app.get('/', (req, res) => {
         path.join(__dirname, 'index.html')
     ];
     for (let spot of spots) {
-        if (fs.existsSync(spot)) return res.sendFile(spot
+        if (fs.existsSync(spot)) return res.sendFile(spot);
+    }
+    res.status(404).send("Website files not found. Please check your public folder on GitHub.");
+});
+
+/**
+ * 3. THE SCAN ENGINE (Initiate Scan)
+ */
+app.post('/api/extract', upload.single('file'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    const tempPath = path.join(os.tmpdir(), `up-${Date.now()}`);
+    try {
+        fs.writeFileSync(tempPath, req.file.buffer);
+        const metadata = await exiftool.read(tempPath, ["-n"]);
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+
+        let aiSummary = "[PREVIEW MODE] To enable AI analysis, add your OpenAI Key to Render.";
+        if (openai) {
+            try {
+                const response = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        { role: "system", content: "You are a forensic metadata translator. Stay factual." },
+                        { role: "user", content: `Translate this: ${JSON.stringify(metadata)}` }
+                    ]
+                });
+                aiSummary = response.choices[0].message.content;
+            } catch (e) { aiSummary = "AI analysis unavailable."; }
+        }
+        
+        res.json({
+            ...metadata,
+            ai_summary: aiSummary,
+            gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Extraction failed' });
+    }
+});
+
+// Placeholders for other buttons
+app.post('/api/telemetry', (req, res) => res.json({ status: 'ok' }));
+app.post('/api/leads', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+app.listen(port, () => console.log(`Server is running on port ${port}`));
