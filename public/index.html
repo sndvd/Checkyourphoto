@@ -135,3 +135,103 @@
 </script>
 </body>
 </html>
+<body>
+
+<div class="container text-center">
+    <div class="mt-5 mb-4">
+        <h1 style="font-size: 4rem; font-weight: 900;" class="neon">CHECK YOUR PHOTO</h1>
+        <p class="mission">We reveal every piece of hidden metadata.</p>
+        <p class="promise">YOU DECIDE WHAT IT MEANS.</p>
+    </div>
+
+    <div class="scan-box">
+        <div class="dropzone" id="uploadArea">
+            <div class="instr">INITIATE FORENSIC SCAN</div>
+            <p class="small mt-2" style="color: var(--accent);">DRAG PHOTO OR DOCUMENT HERE / CLICK TO BROWSE</p>
+            <input type="file" id="fileInput" class="d-none">
+        </div>
+        <div class="privacy-promise">
+            <i class="bi bi-shield-lock-fill"></i> PRIVACY GUARANTEE: WE DO NOT STORE ANY SCANS. ALL SCANS ARE DELETED ONCE YOU REFRESH OR CLOSE THIS WEBSITE.
+        </div>
+        <div id="loader" class="text-center mt-4" style="display:none;"><h3 class="text-success">SCANNING_BYTES...</h3></div>
+
+        <div id="results" class="text-start">
+            <div class="legal-tag">FORENSIC NOTICE: DATA IS OBSERVED FROM FILE CODE ONLY. GUARANTEE OF TRUTH NOT IMPLIED.</div>
+            <div id="fileHeader">TARGET_FILE</div>
+            <div class="row">
+                <div class="col-md-6 p-row"><span class="p-label">Embedded Capture Date</span><div class="p-value" id="res-created">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Last Software Save</span><div class="p-value" id="res-modified">---</div></div>
+                <!-- LOCATION TEXT FIELD -->
+                <div class="col-md-6 p-row"><span class="p-label">Capture Location (GPS)</span><div class="p-value" id="res-gps">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Reported Device Identity</span><div class="p-value" id="res-device">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Resolution Integrity</span><div class="p-value" id="res-size">---</div></div>
+            </div>
+            <div class="observation-box" id="res-observation">---</div>
+            <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Geolocation Mapping</span><div id="map"></div></div>
+        </div>
+    </div>
+
+    <div class="footer-area">
+        <div class="forensic-description">
+            <h6 class="mb-3" style="color: #777; font-family: 'Silkscreen'; font-size: 0.9rem;">Professional Forensic Image Analysis Tool</h6>
+            Checkyourphoto extracts hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong>, pinpoint <strong>GPS locations</strong>, and identify <strong>hardware signatures</strong>. Our forensic engine also detects traces of digital manipulation or AI tools. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.
+        </div>
+        <p style="color: #555; font-family: 'Silkscreen'; font-size: 0.75rem;">© 2026 CHECKYOURPHOTO // ZERO-STORAGE POLICY ENFORCED</p>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const results = document.getElementById('results');
+    let map = null, marker = null;
+    uploadArea.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => { if (e.target.files.length) handleFileUpload(e.target.files[0]); };
+    
+    async function handleFileUpload(file) {
+        document.getElementById('loader').style.display = 'block';
+        results.style.display = 'none';
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch('/api/extract', { method: 'POST', body: formData });
+            const data = await response.json();
+            displayResults(data, file.name);
+        } catch (error) { alert('SCAN ERROR'); } finally { document.getElementById('loader').style.display = 'none'; }
+    }
+
+    function displayResults(data, fileName) {
+        results.style.display = 'block';
+        document.getElementById('fileHeader').textContent = fileName.toUpperCase();
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (!val || val === "null" || val === "undefined") { el.textContent = "NOT EMBEDDED"; el.classList.add('not-found'); }
+            else { el.textContent = val.toString().toUpperCase(); el.classList.remove('not-found'); }
+        };
+        set('res-created', data.display_captured);
+        set('res-modified', data.display_edited);
+        set('res-device', (data.Make || data.Model) ? `${data.Make} ${data.Model}` : null);
+        set('res-size', (data.ImageWidth) ? `${data.ImageWidth} X ${data.ImageHeight}` : null);
+        
+        document.getElementById('res-observation').textContent = data.display_observation;
+        
+        // --- LOCATION HANDLING ---
+        if (data.gps) {
+            set('res-gps', `${data.gps.lat.toFixed(6)}, ${data.gps.lon.toFixed(6)}`);
+            document.getElementById('map-area').style.display = 'block';
+            if (!map) {
+                map = L.map('map').setView([data.gps.lat, data.gps.lon], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            } else { map.setView([data.gps.lat, data.gps.lon], 13); }
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
+            setTimeout(() => map.invalidateSize(), 500);
+        } else { 
+            set('res-gps', null);
+            document.getElementById('map-area').style.display = 'none'; 
+        }
+    }
+</script>
+</body>
+</html>
