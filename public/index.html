@@ -17,18 +17,14 @@
         .dropzone { border: 2px dashed var(--accent); padding: 50px; cursor: pointer; text-align: center; }
         .instr { color: var(--accent); font-weight: 900; font-size: 1.3rem; text-shadow: 0 0 5px var(--accent); }
         .privacy-promise { font-family: 'Inter', sans-serif; font-weight: 700; color: #fff; background: rgba(0, 255, 140, 0.1); border: 1px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.75rem; text-transform: uppercase; display: inline-block; }
-
-        /* --- AVENUE BLACK RESULTS --- */
         #results { display: none; margin-top: 40px; background: #fff; color: #000; padding: 40px; border: 10px solid var(--accent); }
         #fileHeader { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 2rem; border-bottom: 8px solid #000; margin-bottom: 30px; text-transform: uppercase; }
         .p-row { border-bottom: 1px solid #eee; padding: 15px 0; }
         .p-label { font-family: 'Silkscreen'; font-size: 0.7rem; color: #888; display: block; margin-bottom: 3px; }
         .p-value { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.5rem; line-height: 1.1; text-transform: uppercase; }
         .not-found { color: #d00 !important; opacity: 0.5; }
-
         #map { height: 350px; width: 100%; border: 4px solid #000; filter: grayscale(1); margin-top: 15px; }
         .summary-box { background: #000; color: #fff; padding: 25px; margin-top: 30px; border-left: 12px solid var(--accent); font-family: 'Inter', sans-serif; font-weight: 900; }
-
         .footer-area { margin-top: 100px; padding-top: 40px; border-top: 1px solid #222; text-align: center; }
         .forensic-description { color: #666; font-size: 0.85rem; max-width: 800px; margin: 0 auto 20px auto; font-family: sans-serif; }
     </style>
@@ -55,24 +51,15 @@
         <div id="results" class="text-start">
             <div id="fileHeader">TARGET_ID</div>
             <div class="row">
-                <div class="col-md-6 p-row"><span class="p-label">Camera Capture Date (Internal)</span><div class="p-value" id="res-created">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">Software Edit/Save Date</span><div class="p-value" id="res-modified">---</div></div>
-                <!-- NEW LOCATION TEXT FIELD -->
-                <div class="col-md-6 p-row"><span class="p-label">Capture Location (GPS)</span><div class="p-value" id="res-gps">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">Original Device Identity</span><div class="p-value" id="res-device">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">Resolution Integrity</span><div class="p-value" id="res-size">---</div></div>
-                <div class="col-md-6 p-row"><span class="p-label">AI Generation / Software</span><div class="p-value" id="res-software">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Camera Capture Date</span><div class="p-value" id="res-created">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Software Edit Date</span><div class="p-value" id="res-modified">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Capture Location</span><div class="p-value" id="res-gps">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Hardware Fingerprint</span><div class="p-value" id="res-device">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Image Resolution</span><div class="p-value" id="res-size">---</div></div>
+                <div class="col-md-6 p-row"><span class="p-label">Editing Software</span><div class="p-value" id="res-software">---</div></div>
             </div>
-            
-            <div id="map-area" class="mt-4" style="display:none;">
-                <span class="p-label">Interactive Forensic Map</span>
-                <div id="map"></div>
-            </div>
-
-            <div class="summary-box">
-                <span class="p-label" style="color: var(--accent);">FORENSIC_SUMMARY</span>
-                <div id="res-summary">---</div>
-            </div>
+            <div id="map-area" class="mt-4" style="display:none;"><span class="p-label">Forensic Location Mapping</span><div id="map"></div></div>
+            <div class="summary-box"><span class="p-label" style="color: var(--accent);">FORENSIC_SUMMARY</span><div id="res-summary">---</div></div>
         </div>
     </div>
 
@@ -93,7 +80,6 @@
     let map = null, marker = null;
     uploadArea.onclick = () => fileInput.click();
     fileInput.onchange = (e) => { if (e.target.files.length) handleFileUpload(e.target.files[0]); };
-    
     async function handleFileUpload(file) {
         document.getElementById('loader').style.display = 'block';
         results.style.display = 'none';
@@ -105,27 +91,19 @@
             displayResults(data, file.name);
         } catch (error) { alert('SCAN ERROR'); } finally { document.getElementById('loader').style.display = 'none'; }
     }
-
     function displayResults(data, fileName) {
         results.style.display = 'block';
         document.getElementById('fileHeader').textContent = fileName.toUpperCase();
-        
         const set = (id, val) => {
             const el = document.getElementById(id);
-            if (!val || val === "null" || val === "undefined") {
-                el.textContent = "NOT DETECTED"; el.classList.add('not-found');
-            } else {
-                el.textContent = val.toString().toUpperCase(); el.classList.remove('not-found');
-            }
+            if (!val || val === "null" || val === "undefined") { el.textContent = "NOT DETECTED"; el.classList.add('not-found'); }
+            else { el.textContent = val.toString().toUpperCase(); el.classList.remove('not-found'); }
         };
-
         set('res-created', data.display_captured);
         set('res-modified', data.display_edited);
         set('res-device', (data.Make || data.Model) ? `${data.Make} ${data.Model}` : null);
         set('res-size', (data.ImageWidth) ? `${data.ImageWidth} X ${data.ImageHeight}` : null);
         set('res-software', data.Software || data.CreatorTool);
-        
-        // --- LOCATION HANDLING ---
         if (data.gps) {
             set('res-gps', `${data.gps.lat.toFixed(6)}, ${data.gps.lon.toFixed(6)}`);
             document.getElementById('map-area').style.display = 'block';
@@ -136,24 +114,9 @@
             if (marker) map.removeLayer(marker);
             marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
             setTimeout(() => map.invalidateSize(), 500);
-        } else {
-            set('res-gps', null);
-            document.getElementById('map-area').style.display = 'none';
-        }
-
-        // --- SUMMARY LOGIC ---
-        let summary = "ANALYSIS COMPLETE. ";
-        if (!data.display_captured && !data.gps) {
-            summary += "WARNING: FORENSIC DATA HAS BEEN STRIPPED. COMMONLY SEEN IN FILES FROM WHATSAPP OR INSTAGRAM.";
-        } else if (data.Software && (data.Software.includes('Photoshop') || data.Software.includes('Canva'))) {
-            summary += "ALERT: DIGITAL ALTERATION SIGNATURES DETECTED.";
-        } else {
-            summary += "METADATA INTEGRITY IS HIGH.";
-        }
-        document.getElementById('res-summary').textContent = summary;
+        } else { set('res-gps', null); document.getElementById('map-area').style.display = 'none'; }
+        document.getElementById('res-summary').textContent = data.display_summary;
     }
 </script>
 </body>
 </html>
-// Inside your displayResults function, update the summary line:
-document.getElementById('res-summary').textContent = data.display_summary;
