@@ -3,32 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- --- SEO META TAGS --- -->
     <title>Checkyourphoto | Forensic Image Metadata & AI Detection Tool</title>
-    <meta name="description" content="Extract hidden EXIF metadata from any photo. Reveal original creation dates, GPS locations, device signatures, and detect AI-generated or edited images instantly.">
-    <meta name="keywords" content="check photo date, image metadata reader, forensic photo analysis, find photo location, EXIF data viewer, detect AI images, checkyourphoto">
-    <meta name="author" content="Checkyourphoto">
-    
-    <!-- Social Media Sharing (Open Graph) -->
-    <meta property="og:title" content="Checkyourphoto | Forensic Image Analysis">
-    <meta property="og:description" content="Reveal the hidden truth behind any image. Check dates, locations, and editing history.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://checkyourphoto.onrender.com"> <!-- Replace with your real URL -->
-
-    <!-- --- STYLES & FONTS --- -->
+    <meta name="description" content="Extract hidden EXIF metadata. Reveal original creation dates, GPS locations, and detect AI-generated images instantly.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Silkscreen&family=Inter:wght@900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
         :root { --accent: #00FF8C; --bg: #101314; }
-        body { background-color: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding-bottom: 80px; }
+        body { background-color: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding-bottom: 50px; }
         .neon { color: var(--accent); text-shadow: 0 0 10px rgba(0, 255, 140, 0.5); }
         .mission { font-family: 'Silkscreen'; color: var(--accent); text-align: center; font-size: 0.85rem; margin-bottom: 2rem; }
         .scan-box { border: 2px solid var(--accent); padding: 2rem; background: #000; }
-        .dropzone { border: 2px dashed var(--accent); padding: 50px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .dropzone { border: 2px dashed var(--accent); padding: 50px; cursor: pointer; text-align: center; }
         .instr { color: var(--accent); font-weight: 900; font-size: 1.3rem; text-shadow: 0 0 5px var(--accent); }
         .privacy-promise { font-family: 'Inter', sans-serif; font-weight: 700; color: #fff; background: rgba(0, 255, 140, 0.1); border: 1px solid var(--accent); padding: 10px; margin-top: 15px; font-size: 0.8rem; text-transform: uppercase; display: inline-block; }
         #results { display: none; margin-top: 40px; background: #fff; color: #000; padding: 40px; border: 10px solid var(--accent); }
@@ -38,9 +25,11 @@
         .summary-box { background: #000; color: #fff; padding: 25px; margin-top: 40px; border-left: 12px solid var(--accent); }
         #map { height: 350px; width: 100%; border: 4px solid #000; filter: grayscale(1); margin-top: 15px; }
         
-        /* SEO Content Styling */
-        .seo-content { margin-top: 100px; color: #444; font-size: 0.8rem; border-top: 1px solid #222; padding-top: 40px; text-align: justify; }
-        .seo-content h2 { color: #666; font-size: 1rem; font-family: 'Silkscreen'; }
+        /* FOOTER & SEO VISIBILITY */
+        .footer-area { margin-top: 100px; padding-top: 40px; border-top: 1px solid #222; }
+        .forensic-description { color: #666; font-size: 0.85rem; line-height: 1.6; max-width: 800px; margin: 0 auto 30px auto; text-align: center; font-family: sans-serif; }
+        .forensic-description strong { color: #888; }
+        .copyright-line { color: #555; font-family: 'Silkscreen'; font-size: 0.75rem; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -57,14 +46,10 @@
             <p class="small mt-2 mb-0" style="color: var(--accent);">DRAG FILE HERE OR CLICK TO BROWSE</p>
             <input type="file" id="fileInput" class="d-none">
         </div>
-        
         <div class="privacy-promise">
             <i class="bi bi-shield-lock-fill"></i> PRIVACY GUARANTEE: NO SCANS ARE STORED. DATA IS PURGED UPON CLOSING.
         </div>
-        
-        <div id="loader" class="text-center mt-4" style="display:none;">
-            <h3 class="text-success">SCANNING_BYTES...</h3>
-        </div>
+        <div id="loader" class="text-center mt-4" style="display:none;"><h3 class="text-success">SCANNING_BYTES...</h3></div>
 
         <div id="results">
             <div id="fileHeader">TARGET_ID</div>
@@ -79,16 +64,15 @@
         </div>
     </div>
 
-    <!-- SEO KEYWORD SECTION (Google loves this) -->
-    <div class="seo-content">
-        <h2>Professional Forensic Image Analysis Tool</h2>
-        <p>Checkyourphoto is a specialized digital forensics tool designed to extract hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong> of a photo, pinpoint the <strong>GPS location</strong> where an image was captured, and identify the <strong>hardware identity</strong> of the device used. Our forensic engine also detects <strong>AI-generated images</strong> (Midjourney, DALL-E) and traces of digital manipulation from software like Adobe Photoshop or Canva. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.</p>
+    <!-- FOOTER AREA WITH DESCRIPTION -->
+    <div class="footer-area text-center">
+        <div class="forensic-description">
+            <h6 class="mb-3" style="color: #777; font-family: 'Silkscreen'; font-size: 0.9rem;">Professional Forensic Image Analysis Tool</h6>
+            Checkyourphoto is a specialized digital forensics tool designed to extract hidden <strong>EXIF metadata</strong> from images and documents. Use our scanner to find the <strong>original creation date</strong> of a photo, pinpoint the <strong>GPS location</strong> where an image was captured, and identify the <strong>hardware identity</strong> of the device used. Our forensic engine also detects <strong>AI-generated images</strong> (Midjourney, DALL-E) and traces of digital manipulation from software like Adobe Photoshop or Canva. Perfect for verifying work proof, freelance submissions, and dating profile authenticity.
+        </div>
+        <p class="copyright-line">© 2026 CHECKYOURPHOTO // ZERO-STORAGE POLICY ENFORCED</p>
     </div>
 </div>
-
-<footer class="text-center mt-5 mb-5 small text-secondary">
-    <p>© 2026 CHECKYOURPHOTO // ZERO-STORAGE POLICY</p>
-</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -96,10 +80,8 @@
     const fileInput = document.getElementById('fileInput');
     const results = document.getElementById('results');
     let map = null, marker = null;
-
     uploadArea.onclick = () => fileInput.click();
     fileInput.onchange = (e) => { if (e.target.files.length) handleFileUpload(e.target.files[0]); };
-
     async function handleFileUpload(file) {
         document.getElementById('loader').style.display = 'block';
         results.style.display = 'none';
@@ -111,7 +93,6 @@
             displayResults(data, file.name);
         } catch (error) { alert('SCAN ERROR'); } finally { document.getElementById('loader').style.display = 'none'; }
     }
-
     function displayResults(data, fileName) {
         results.style.display = 'block';
         document.getElementById('fileHeader').textContent = fileName.toUpperCase();
