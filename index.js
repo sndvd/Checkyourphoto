@@ -25,8 +25,20 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
         
-        // This ensures the summary is never empty
-        const summary = metadata.DateTimeOriginal ? "Date signature detected. Analysis complete." : "Metadata stripped by messaging app (WhatsApp/Social Media). No original date found.";
+        // --- SMART FORENSIC SUMMARY LOGIC ---
+        let summary = "ANALYSIS COMPLETE. ";
+        
+        // Check for AI / Software Edits
+        const software = (metadata.Software || metadata.CreatorTool || "").toLowerCase();
+        if (software.includes('photoshop') || software.includes('canva')) {
+            summary += "ALERT: DIGITAL ALTERATION DETECTED. ";
+        } else if (software.includes('midjourney') || software.includes('dall-e') || software.includes('ai')) {
+            summary += "ALERT: AI GENERATION SIGNATURE DETECTED. ";
+        } else if (!metadata.DateTimeOriginal && !metadata.gps) {
+            summary += "SIGNATURES STRIPPED (LIKELY SOCIAL MEDIA/WHATSAPP). ";
+        } else {
+            summary += "METADATA INTEGRITY APPEARS HIGH. ";
+        }
 
         res.json({
             ...metadata,
@@ -36,4 +48,4 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Scan failed' }); }
 });
 
-app.listen(port, () => console.log(`Live on ${port}`));
+app.listen(port, () => console.log(`Forensic System Live on ${port}`));
