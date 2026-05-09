@@ -4,3 +4,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkyourphoto - Futuristic Forensic Analysis</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Silkscreen&family=Big+Shoulders+Display:wght@900&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-color: #101314;
+            --card-bg: #141C1A;
+            --accent-color: #00FF8C;
+            --text-color: #e0e0e0;
+            --border-glow: 0 0 10px rgba(0, 255, 140, 0.3);
+            --neon-text-glow: 0 0 5px rgba(0, 255, 140, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Orbitron', sans-serif;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 255, 140, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 140, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .brand-font { font-family: 'Big Shoulders Display', sans-serif; font-weight: 900; text-transform: uppercase; }
+        .pixel-font { font-family: 'Silkscreen', cursive; }
+        .neon-text { color: var(--accent-color); text-shadow: var(--neon-text-glow); }
+
+        .navbar {
+            background-color: rgba(16, 19, 20, 0.9);
+            border-bottom: 1px solid rgba(0, 255, 140, 0.2);
+            padding: 1rem 0;
+        }
+
+        .brand-icon { width: 30px; height: 30px; margin: 0 10px; filter: drop-shadow(var(--neon-text-glow)); }
+
+        .header-title {
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .header-subtitle {
+            font-size: 1.2rem;
+            letter-spacing: 8px;
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 3rem;
+            opacity: 0.8;
+        }
+
+        .scan-container {
+            border: 1px solid rgba(0, 255, 140, 0.1);
+            background: linear-gradient(180deg, rgba(0, 255, 140, 0.02) 0%, rgba(16, 19, 20, 1) 100%);
+            padding: 2rem;
+            position: relative;
+        }
+
+        .focus-marker { position: absolute; width: 40px; height: 40px; z-index: 10; }
+
+        .dropzone {
+            border: 2px dotted var(--accent-color);
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            padding: 60px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, var(--accent-color), transparent);
+            box-shadow: 0 0 15px var(--accent-color);
+            z-index: 5;
+            animation: scan 3s linear infinite;
+            display: none;
+        }
+
+        .dropzone:hover .scan-line { display: block; }
+
+        @keyframes scan {
+            0% { top: -5%; }
+            100% { top: 105%; }
+        }
+
+        .upload-icon { width: 120px; margin-bottom: 20px; filter: drop-shadow(var(--neon-text-glow)); }
+
+        .card { background-color: var(--card-bg); border: 1px solid rgba(0, 255, 140, 0.2); border-radius: 4px; color: var(--text-color); }
+        .card-header { background-color: rgba(0, 255, 140, 0.1); border-bottom: 1px solid rgba(0, 255, 140, 0.2); font-family: 'Silkscreen', sans-serif; color: var(--accent-color); }
+
+        .nav-tabs { border-bottom: 1px solid rgba(0, 255, 140, 0.2); }
+        .nav-link { color: var(--text-color); border: none; opacity: 0.6; transition: all 0.3s; font-size: 0.9rem; }
+        .nav-link.active { background-color: transparent !important; color: var(--accent-color) !important; border-bottom: 2px solid var(--accent-color) !important; opacity: 1; text-shadow: var(--neon-text-glow); }
+
+        .form-control, .form-control:focus { background-color: #0d1110; border: 1px solid rgba(0, 255, 140, 0.3); color: var(--text-color); }
+        .btn-primary { background-color: var(--accent-color); border: none; color: var(--bg-color); font-weight: 700; }
+
+        #map { height: 400px; width: 100%; filter: grayscale(1) invert(0.9) hue-rotate(100deg); }
+        #results { display: none; }
+        .interpretation-field { font-family: sans-serif; font-size: 0.9rem; }
+
+        footer { background-color: #0d1110; padding: 2rem 0; margin-top: 5rem; border-top: 1px solid rgba(0, 255, 140, 0.2); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container justify-content-center">
+        <img src="assets/telescope_icon.svg" class="brand-icon" alt="Scan">
+        <span class="navbar-brand neon-text pixel-font">META_READER_v1.0</span>
+        <img src="assets/microscope_icon.svg" class="brand-icon" alt="Analysis">
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="header-title neon-text brand-font">CHECK YOUR PHOTO</h1>
+    <p class="header-subtitle pixel-font">FORENSIC ANALYSIS</p>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="scan-container mb-5">
+                <img src="assets/focus_markers.svg" class="focus-marker top-0 start-0" style="transform: rotate(0deg);" alt="">
+                <img src="assets/focus_markers.svg" class="focus-marker top-0 end-0" style="transform: rotate(90deg);" alt="">
+                <img src="assets/focus_markers.svg" class="focus-marker bottom-0 start-0" style="transform: rotate(270deg);" alt="">
+                <img src="assets/focus_markers.svg" class="focus-marker bottom-0 end-0" style="transform: rotate(180deg);" alt="">
+                
+                <div class="dropzone" id="uploadArea">
+                    <div class="scan-line"></div>
+                    <img src="assets/forensic_magnifier.svg" class="upload-icon" alt="Upload">
+                    <h4 class="pixel-font neon-text">INITIATE SCAN</h4>
+                    <p class="mt-2 text-muted small">DRAG PHOTO OR DOCUMENT HERE / CLICK TO BROWSE</p>
+                    <input type="file" id="fileInput" class="d-none" accept="image/*,application/pdf">
+                </div>
+                
+                <div id="loading" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 neon-text pixel-font">EXTRACTING METADATA... DECRYPTING HEADERS...</p>
+                </div>
+
+                <div id="results" class="mt-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-2">
+                        <h5 id="fileNameDisplay" class="neon-text pixel-font mb-0">TARGET_FILE.DAT</h5>
+                    </div>
+
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs mb-4" id="metaTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary" type="button">OVERVIEW</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#gps" type="button">GEOLOCATION</button></li>
+                    </ul>
+                    
+                    <div class="tab-content" id="metaTabsContent">
+                        <div class="tab-pane fade show active" id="summary">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card p-3">
+                                        <label class="small text-muted mb-1">CAPTURE TIMESTAMP</label>
+                                        <div class="form-control mb-2" id="val-capture-time">N/A</div>
+                                        <label class="small text-primary mb-1">INTERPRETATION</label>
+                                        <input type="text" class="form-control form-control-sm interpretation-field" placeholder="Notes...">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card p-3">
+                                        <label class="small text-muted mb-1">HARDWARE ID</label>
+                                        <div class="form-control mb-2" id="val-device">N/A</div>
+                                        <label class="small text-primary mb-1">INTERPRETATION</label>
+                                        <input type="text" class="form-control form-control-sm interpretation-field" placeholder="Notes...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="gps">
+                            <div id="map"></div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4 p-3" style="border-left: 4px solid var(--accent-color);">
+                        <h6 class="pixel-font neon-text"><i class="bi bi-cpu"></i> AI_FORENSIC_SUMMARY</h6>
+                        <div id="aiExplanation" class="small text-muted">Awaiting scan results...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="container text-center">
+        <p class="pixel-font small mb-0">&copy; 2026 CHECKYOURPHOTO // PRIVACY_ENFORCED</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    
+    let map = null;
+    let marker = null;
+
+    uploadArea.onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+        if (e.target.files.length) handleFileUpload(e.target.files[0]);
+    };
+
+    async function handleFileUpload(file) {
+        loading.style.display = 'block';
+        results.style.display = 'none';
+        
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/extract', { method: 'POST', body: formData });
+            const data = await response.json();
+            displayResults(data, file.name);
+        } catch (error) {
+            alert('Scan Error: ' + error.message);
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    function displayResults(data, fileName) {
+        fileNameDisplay.textContent = fileName.toUpperCase();
+        results.style.display = 'block';
+        
+        document.getElementById('val-capture-time').textContent = data.DateTimeOriginal || 'N/A';
+        document.getElementById('val-device').textContent = (data.Make || data.Model) ? `${data.Make || ''} ${data.Model || ''}` : 'N/A';
+        document.getElementById('aiExplanation').textContent = data.ai_summary || 'No AI summary available.';
+
+        if (data.gps) {
+            if (!map) {
+                map = L.map('map').setView([data.gps.lat, data.gps.lon], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            } else {
+                map.setView([data.gps.lat, data.gps.lon], 13);
+            }
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([data.gps.lat, data.gps.lon]).addTo(map);
+            setTimeout(() => map.invalidateSize(), 500);
+        }
+    }
+</script>
+
+</body>
+</html>
