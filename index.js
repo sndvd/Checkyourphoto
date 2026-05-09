@@ -10,37 +10,40 @@ const { OpenAI } = require('openai');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// AI Setup
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Upload Setup
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(express.json());
+
+// 1. Tell the server to look in the 'public' folder for the website files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
 
-// SMART FINDER for index.html
-function findIndexHtml(dir) {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-        const fullPath = path.join(dir, file);
-        if (fs.lstatSync(fullPath).isDirectory()) {
-            if (file === 'node_modules' || file === '.git') continue;
-            const found = findIndexHtml(fullPath);
-            if (found) return found;
-        } else if (file.toLowerCase() === 'index.html') {
-            return fullPath;
-        }
-    }
-    return null;
-}
-
+// 2. Load the main page directly from the public folder
 app.get('/', (req, res) => {
-    const filePath = findIndexHtml(__dirname);
-    if (filePath) res.sendFile(filePath);
-    else res.status(404).send("index.html not found.");
+    // We look for index.html in the public folder
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        // This will help us find the file if it's named slightly wrong
+        const files = fs.readdirSync(path.join(__dirname, 'public'));
+        res.status(404).send(`
+            <h1>File Not Found</h1>
+            <p>I am looking for <strong>index.html</strong> inside your <strong>public</strong> folder.</p>
+            <p><strong>Files I see inside 'public':</strong> ${files.join(', ')}</p>
+        `);
+    }
 });
 
+// 3. The Extraction Engine (Scanning)
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const tempPath = path.join(os.tmpdir(), `scan-${Date.now()}`);
@@ -49,12 +52,12 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
         const metadata = await exiftool.read(tempPath, ["-n"]);
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 
-        let aiSummary = "[PREVIEW] AI Summary active.";
+        let aiSummary = "[PREVIEW] AI analysis active.";
         if (openai) {
             try {
                 const response = await openai.chat.completions.create({
                     model: "gpt-4o",
-                    messages: [{ role: "user", content: `Translate metadata: ${JSON.stringify(metadata)}` }]
+                    messages: [{ role: "user", content: `Translate: ${JSON.stringify(metadata)}` }]
                 });
                 aiSummary = response.choices[0].message.content;
             } catch (e) { aiSummary = "AI unavailable."; }
