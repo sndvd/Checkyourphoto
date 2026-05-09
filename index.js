@@ -14,17 +14,24 @@ const port = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
+// Multer Setup (This was the missing part!)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 app.use(cors());
 app.use(express.json());
 
-// 1. This tells the server where your images/graphics are
+// Tell the server where the public files are
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. THIS IS THE FIX: This forces the server to show your index.html
+// Force the server to show your index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+/**
+ * Extraction API
+ */
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const tempPath = path.join(os.tmpdir(), `up-${Date.now()}`);
@@ -55,10 +62,14 @@ app.post('/api/extract', upload.single('file'), async (req, res) => {
             gps: (metadata.GPSLatitude && metadata.GPSLongitude) ? { lat: metadata.GPSLatitude, lon: metadata.GPSLongitude } : null
         });
     } catch (e) {
+        console.error("Extraction error:", e);
         res.status(500).json({ error: 'Extraction failed' });
     }
 });
 
+// Simple placeholders to prevent frontend errors
+app.post('/api/telemetry', (req, res) => res.json({ status: 'ok' }));
+app.post('/api/leads', (req, res) => res.json({ status: 'ok' }));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(port, () => {
