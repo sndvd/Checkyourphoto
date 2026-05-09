@@ -1,33 +1,43 @@
 const express = require('express');
-const path = require('path');
+const multer = require('multer');
+const { exiftool } = require('exiftool-vendored');
+const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { OpenAI } = require('openai');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-    const publicDir = path.join(__dirname, 'public');
-    
-    try {
-        // We look inside the public folder for ANY file that looks like index.html
-        const files = fs.readdirSync(publicDir);
-        const actualFile = files.find(f => f.toLowerCase().trim().startsWith('index.html'));
+// AI Setup
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
-        if (actualFile) {
-            console.log(`>>> FORCE LOADING: ${actualFile}`);
-            res.sendFile(path.join(publicDir, actualFile));
-        } else {
-            res.status(404).send("Could not find any file starting with index.html in the public folder.");
-        }
-    } catch (e) {
-        res.status(500).send("Error reading public folder: " + e.message);
-    }
-});
+// Upload Setup
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-// Serve assets (graphics)
+app.use(cors());
+app.use(express.json());
+
+/**
+ * 1. THE IMAGE FIX
+ * This tells the server to look for images in every possible folder
+ */
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
-
-app.listen(port, () => console.log(`Server live on port ${port}`));
+/**
+ * 2. THE WEBSITE FIX
+ * This forces index.html to load correctly
+ */
+app.get('/', (req, res) => {
+    const spots = [
+        path.join(__dirname, 'public', 'index.html'),
+        path.join(__dirname, 'index.html')
+    ];
+    for (let spot of spots) {
+        if (fs.existsSync(spot)) return res.sendFile(spot
